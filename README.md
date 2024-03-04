@@ -25,7 +25,17 @@ Analitzant la funció comentada anteriorment, veiem que com, en general, es trac
 
 Si a més a més ens fixem bé, trobarem que part de la funció està agrupada en un do-while (`STEP 3: Updating centroids`). Dins d'aquest do-while, veiem que el for que s'executarà més cops és el segon dins d'aquest ja que iterarà tants cops com pixels tingui la imatge, a diferència dels demés que ho faran tants cops com centroides li indiquem al executar el codi.
 
-
+```c
+// Find closest cluster for each pixel
+		for(j = 0; j < num_pixels; j++) 
+    	{
+			closest = find_closest_centroid(&pixels[j], centroides, k);
+			centroides[closest].media_r += pixels[j].r;
+			centroides[closest].media_g += pixels[j].g;
+			centroides[closest].media_b += pixels[j].b;
+			centroides[closest].num_puntos++;
+		}
+```
 
 <Començant pel primer for (`STEP 2: Init centroids`), veiem que segueixen un patró de tipus MAP i per tant podem aplicar el que ja hem comentat al paràgraf anterior de la següent manera:>
 
