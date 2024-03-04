@@ -1,6 +1,6 @@
 # KMeans
 
-## Initial sequential TEST for imagen.bmp
+## Test seqüencial inicial per imagen.bmp
 
 | K value | Time |
 | ------- | ---- |
@@ -15,9 +15,9 @@
 | 9 | 3,196 |
 | 10 | 3,371 |
 
-Checksum: 26557158
+Checksum: 26557158 (K=10)
 
-## First view to optimize
+## Optimitzacions
 
 Executant `perf record` per K = 10, veiem que la funció que més temps ocupa a l'execució del programa es la `kmeans` de l'arxiu `kmeanslib.c`.
 
