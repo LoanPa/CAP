@@ -15,6 +15,8 @@
 | 9 | 3,196 |
 | 10 | 3,371 |
 
+Checksum: 26557158
+
 ## First view to optimize
 
 Executant `perf record` per K = 10, veiem que la funció que més temps ocupa a l'execució del programa es la `kmeans` de l'arxiu `kmeanslib.c`.
@@ -36,6 +38,9 @@ for(j = 0; j < num_pixels; j++)
 	centroides[closest].num_puntos++;
 }
 ```
+Com es pot observar, aquest bucle segueix un patró Reduction tres cops independents. D'aquesta manera per poder optimitzar-lo amb OpenMP ho farem de la següent manera:
 
-<Començant pel primer for (`STEP 2: Init centroids`), veiem que segueixen un patró de tipus MAP i per tant podem aplicar el que ja hem comentat al paràgraf anterior de la següent manera:>
+
+
+<!--Començant pel primer for (`STEP 2: Init centroids`), veiem que segueixen un patró de tipus MAP i per tant podem aplicar el que ja hem comentat al paràgraf anterior de la següent manera:>
 
