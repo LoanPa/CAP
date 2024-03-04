@@ -27,14 +27,14 @@ Si a més a més ens fixem bé, trobarem que part de la funció està agrupada e
 
 ```c
 // Find closest cluster for each pixel
-		for(j = 0; j < num_pixels; j++) 
-    	{
-			closest = find_closest_centroid(&pixels[j], centroides, k);
-			centroides[closest].media_r += pixels[j].r;
-			centroides[closest].media_g += pixels[j].g;
-			centroides[closest].media_b += pixels[j].b;
-			centroides[closest].num_puntos++;
-		}
+for(j = 0; j < num_pixels; j++) 
+{
+	closest = find_closest_centroid(&pixels[j], centroides, k);
+	centroides[closest].media_r += pixels[j].r;
+	centroides[closest].media_g += pixels[j].g;
+	centroides[closest].media_b += pixels[j].b;
+	centroides[closest].num_puntos++;
+}
 ```
 
 <Començant pel primer for (`STEP 2: Init centroids`), veiem que segueixen un patró de tipus MAP i per tant podem aplicar el que ja hem comentat al paràgraf anterior de la següent manera:>
