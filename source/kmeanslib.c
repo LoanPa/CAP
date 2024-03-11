@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include "kmeanslib.h"
+#include "omp.h"
 
 
 /*
@@ -190,11 +191,11 @@ uint8_t find_closest_centroid(rgb* p, cluster* centroids, uint8_t num_clusters){
  * input @param: K 			--> number of clusters
  * input @param: centroides --> the centroids
  * input @param: num_pixels --> number of total pixels
- * input @param: pixels 	--> pinter to array of rgb (pixels)
+ * input @param: pixels 	--> pointer to array of rgb (pixels)
  */
 void kmeans(uint8_t k, cluster* centroides, uint32_t num_pixels, rgb* pixels){	
 	uint8_t condition, changed, closest;
-	uint32_t i, j, random_num;
+	uint32_t i, j, random_num, aux_r[k], aux_g[k], aux_b[k], aux_nump[k];
 	
 	printf("STEP 1: K = %d\n", k);
 	k = MIN(k, num_pixels);
@@ -221,22 +222,34 @@ void kmeans(uint8_t k, cluster* centroides, uint32_t num_pixels, rgb* pixels){
 			centroides[j].media_g = 0;
 			centroides[j].media_b = 0;
 			centroides[j].num_puntos = 0;
+			aux_r[j] = 0;
+			aux_g[j] = 0;
+			aux_b[j] = 0;
+			aux_nump[j] = 0;
 		}
    
 		// Find closest cluster for each pixel
+		#pragma omp parallel for reduction(+:aux_r, aux_g, aux_b, aux_nump)
 		for(j = 0; j < num_pixels; j++) 
     	{
 			closest = find_closest_centroid(&pixels[j], centroides, k);
-			centroides[closest].media_r += pixels[j].r;
-			centroides[closest].media_g += pixels[j].g;
-			centroides[closest].media_b += pixels[j].b;
-			centroides[closest].num_puntos++;
+			
+			aux_r[closest] += pixels[j].r;
+			aux_g[closest] += pixels[j].g;
+			aux_b[closest] += pixels[j].b;
+			aux_nump[closest]++;
 		}
+		
 
 		// Update centroids & check stop condition
 		condition = 0;
 		for(j = 0; j < k; j++) 
 		{
+			centroides[j].media_r = aux_r[j];
+			centroides[j].media_g = aux_g[j];
+			centroides[j].media_b = aux_b[j];
+			centroides[j].num_puntos = aux_nump[j];
+			
 			if(centroides[j].num_puntos == 0) 
 			{
 				continue;
