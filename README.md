@@ -2,7 +2,9 @@
 
 ## Test seqüencial inicial per imagen.bmp
 
-<span style="background-color: #FFFF00">Pendent d'agafar temps en seqüencial per Wilma</span>
+```java
+Pendent d'agafar temps en seqüencial per Wilma
+```
 
 | K value | Time |
 | ------- | ---- |
