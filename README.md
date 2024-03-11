@@ -2,7 +2,7 @@
 
 ## Test seqüencial inicial per imagen.bmp
 
-==Pendent d'agafar temps en seqüencial per Wilma==
+<mark>Pendent d'agafar temps en seqüencial per Wilma</mark>
 
 | K value | Time |
 | ------- | ---- |
