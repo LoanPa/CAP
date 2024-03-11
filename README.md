@@ -3,7 +3,7 @@
 ## Test seqüencial inicial per imagen.bmp
 
 ```java
-Pendent d'agafar temps en seqüencial per Wilma
+====== /!\ ====== Pendent d'agafar temps en seqüencial per Wilma ====== /!\ ====== 
 ```
 
 | K value | Time |
