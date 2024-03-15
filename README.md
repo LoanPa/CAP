@@ -104,3 +104,29 @@ Amb aquest canvi hem aconseguit les següents mètriques:
 
 <!--Començant pel primer for (`STEP 2: Init centroids`), veiem que segueixen un patró de tipus MAP i per tant podem aplicar el que ja hem comentat al paràgraf anterior de la següent manera:>
 
+Seguint amb les optimitzacions, ara provem de substituir del fragment de codi següent, la utilització de classes, ja que no ens permet utilitzar la vectorització:
+
+```c
+		condition = 0;
+		for(j = 0; j < k; j++) 
+		{
+			centroides[j].media_r = aux_r[j];
+			centroides[j].media_g = aux_g[j];
+			centroides[j].media_b = aux_b[j];
+			centroides[j].num_puntos = aux_nump[j];
+			
+			if(centroides[j].num_puntos == 0) 
+			{
+				continue;
+			}
+
+			centroides[j].media_r = centroides[j].media_r/centroides[j].num_puntos;
+			centroides[j].media_g = centroides[j].media_g/centroides[j].num_puntos;
+			centroides[j].media_b = centroides[j].media_b/centroides[j].num_puntos;
+			changed = centroides[j].media_r != centroides[j].r || centroides[j].media_g != centroides[j].g || centroides[j].media_b != centroides[j].b;
+			condition = condition || changed;
+			centroides[j].r = centroides[j].media_r;
+			centroides[j].g = centroides[j].media_g;
+			centroides[j].b = centroides[j].media_b;
+		}
+```
