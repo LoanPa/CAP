@@ -102,31 +102,36 @@ Amb aquest canvi hem aconseguit les següents mètriques:
 
 ![perf stat per K=10 amb la primera millora](/assets/plab_imgs/perf_stat_millora1_k10.png)
 
-<!--Començant pel primer for (`STEP 2: Init centroids`), veiem que segueixen un patró de tipus MAP i per tant podem aplicar el que ja hem comentat al paràgraf anterior de la següent manera:>
 
-Seguint amb les optimitzacions, ara provem de substituir del fragment de codi següent, la utilització de classes, ja que no ens permet utilitzar la vectorització:
+Tot i així, es pot veure que les millores no són enormement significatives. Si ens fixem en el `perf report`, tot i que la funció aparent que més temps triga en executar-se és la `kmeans`, realment és la `find_closest_centroids`. Això ho podem assegurar ja que realment a la funció `kmeans` s'està fent una crida a `find_closest_centroids` tants cops com pixels tingui la imatge. A més a més, si observem detingudament, podem arribar a la conclusió que aquest bucle, realment no és paral·lelitzable en la seva totalitat. Això es deu a que la variable closest no hi és en temps d'execució, el que significa que de manera obligatoria s'ha d'executar el bucle de manera seqüencial per poder fer els tres `reductions`. Per poder evitar-nos-ho, fem un loop fision, de manera que s'executarà en un bucle de `num_pixels` iteracions el càlcul de la variable closest i en un altre de les mateixes iteracions els tres `reductions` (en el segon mantindrem el pragma comentat abans).
+
+Abans, com que s'executaven de manera seqüencial els càlculs de les mitjanes del colors de cada pixel, amb una varibale local `uint8_t` ens servia, ara com que hem tret el càlcul a un altre bucle, hem de convertir aquesta variable en una array. D'aquesta manera mantindrà en la posició `j` de l'array el pixel més proper. Ara fent els canvis comentats i posant un `#pragma omp parallel for` a sobre del primer bucle, ens queda això:
 
 ```c
-		condition = 0;
-		for(j = 0; j < k; j++) 
-		{
-			centroides[j].media_r = aux_r[j];
-			centroides[j].media_g = aux_g[j];
-			centroides[j].media_b = aux_b[j];
-			centroides[j].num_puntos = aux_nump[j];
-			
-			if(centroides[j].num_puntos == 0) 
-			{
-				continue;
-			}
+uint8_t* closest = malloc(sizeof(uint8_t) * num_pixels);
 
-			centroides[j].media_r = centroides[j].media_r/centroides[j].num_puntos;
-			centroides[j].media_g = centroides[j].media_g/centroides[j].num_puntos;
-			centroides[j].media_b = centroides[j].media_b/centroides[j].num_puntos;
-			changed = centroides[j].media_r != centroides[j].r || centroides[j].media_g != centroides[j].g || centroides[j].media_b != centroides[j].b;
-			condition = condition || changed;
-			centroides[j].r = centroides[j].media_r;
-			centroides[j].g = centroides[j].media_g;
-			centroides[j].b = centroides[j].media_b;
-		}
+[...]
+
+#pragma omp parallel for
+for (j = 0; j < num_pixels; j++)
+{
+	closest[j] = find_closest_centroid(&pixels[j], centroides, k);
+}
+
+// Find closest cluster for each pixel
+#pragma omp parallel for reduction(+:aux_r, aux_g, aux_b, aux_nump)
+for(j = 0; j < num_pixels; j++) 
+{
+	aux_r[closest[j]] += pixels[j].r;
+	aux_g[closest[j]] += pixels[j].g;
+	aux_b[closest[j]] += pixels[j].b;
+	aux_nump[closest[j]]++;
+}
 ```
+
+Amb aquests canvis conseguim el següent perfilat:
+
+![perf stat per K=10 amb la segona millora](/assets/plab_imgs/perf_stat_millora2_k10.png)
+
+Obtenint una millora respecte l'anterior millora d'un `5.29x`.
+
