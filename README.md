@@ -1,7 +1,6 @@
 # KMeans
 
 ## Test seqüencial inicial per imagen.bmp
----------------
 
 | K value | Time | -- | K value | Time |
 | ------- | ---- | ----- | ------- | ---- |
@@ -13,8 +12,8 @@
 
 Checksum: 26557158 (K=10)
 
-## Optimitzacions
 ---------------
+## Optimitzacions
 
 Executant `perf record` per K = 10, veiem que la funció que més temps ocupa a l'execució del programa es la `kmeans` de l'arxiu `kmeanslib.c`.
 
@@ -37,8 +36,8 @@ for(j = 0; j < num_pixels; j++)
 ```
 Com es pot observar, aquest bucle segueix un patró Reduction quatre cops de manera independent, un per cada color i un pel número de punts. Així doncs, per poder optimitzar-lo amb OpenMP primer haurem de paral·lelitzar-lo de manera seqüencial.
 
-### Optimització I
 ---------------
+### Optimització I
 
 Per començar hem creat 4 arrays de `k` posicions (`aux_r`, `aux_g`, `aux_n` i `aux_nump`), al for de `Reset centroids` els hem inicialitzat a zero i posteriorment al bucle de `num_pixels` iteracions, hem actualitzar els valors en aquests arrays i no a les variables de l'estructura. Posteriorment, al bucle de `Update centroids & check stop condition` hem aprofitat que el bucle itera `k` vegades per assignar els valores dels arrays als de les variables de les estructures originals. L'explicació anterior es resumiria en el següent codi:
 
@@ -97,8 +96,8 @@ Amb aquest canvi hem aconseguit les següents mètriques:
 
 ![perf stat per K=10 amb la primera millora](/assets/plab_imgs/perf_stat_millora1_k10.png)
 
-### Optimització II
 ---------------
+### Optimització II
 
 Tot i així, es pot veure que les millores no són enormement significatives. Si ens fixem en el `perf report`, tot i que la funció aparent que més temps triga en executar-se és la `kmeans`, realment és la `find_closest_centroids`. Això ho podem assegurar ja que realment a la funció `kmeans` s'està fent una crida a `find_closest_centroids` tants cops com pixels tingui la imatge. A més a més, si observem detingudament, podem arribar a la conclusió que aquest bucle, realment no és paral·lelitzable en la seva totalitat. Això es deu a que la variable closest no hi és en temps d'execució, el que significa que de manera obligatoria s'ha d'executar el bucle de manera seqüencial per poder fer els tres `reductions`. Per poder evitar-nos-ho, fem un loop fision, de manera que s'executarà en un bucle de `num_pixels` iteracions el càlcul de la variable closest i en un altre de les mateixes iteracions els tres `reductions` (en el segon mantindrem el pragma comentat abans).
 
@@ -132,8 +131,8 @@ Amb aquests canvis conseguim el següent perfilat:
 
 Obtenint una millora respecte l'anterior millora d'un `5.29x`.
 
-### Optimització III
 ---------------
+### Optimització III
 
 A partir d'aquí podem fer millores lleus que no afectaran gaire en el pes del temps d'execució final. En aquest cas nosaltres hem decidit fer un altre loop fision en el for final de la mateixa funció (`kmeans`) per treure les divisions a un altre for i poder paral·lelitzar la resta de codi de manera correcta. Afegirem un `#pragma omp parallel for reduction(||:condition) schedule(dynamic)` al segon for resultant ja que, tot i que sigui lògic, hi ha un `reduction` amb la variable condition. Finalemnt, també en aquest for, tornarem a canviar els valors de l'estructura pels valors de les arrays locals que hem creat per poder paral·lelitzar correctament. Els canvis resultants són els següents:
 
