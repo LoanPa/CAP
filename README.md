@@ -47,9 +47,9 @@ for(j = 0; j < k; j++)
 {
 	...
 
-	aux_r[j] = 0;
-	aux_g[j] = 0;
-	aux_b[j] = 0;
+	aux_mean_r[j] = 0;
+	aux_mean_g[j] = 0;
+	aux_mean_b[j] = 0;
 	aux_nump[j] = 0;
 }
 
@@ -58,9 +58,9 @@ for(j = 0; j < num_pixels; j++)
 {
 	closest = find_closest_centroid(&pixels[j], centroides, k);
 	
-	aux_r[closest] += pixels[j].r;
-	aux_g[closest] += pixels[j].g;
-	aux_b[closest] += pixels[j].b;
+	aux_mean_r[closest] += pixels[j].r;
+	aux_mean_g[closest] += pixels[j].g;
+	aux_mean_b[closest] += pixels[j].b;
 	aux_nump[closest]++;
 }
 
@@ -68,9 +68,9 @@ for(j = 0; j < num_pixels; j++)
 condition = 0;
 for(j = 0; j < k; j++) 
 {
-	centroides[j].media_r = aux_r[j];
-	centroides[j].media_g = aux_g[j];
-	centroides[j].media_b = aux_b[j];
+	centroides[j].media_r = aux_mean_r[j];
+	centroides[j].media_g = aux_mean_g[j];
+	centroides[j].media_b = aux_mean_b[j];
 	centroides[j].num_puntos = aux_nump[j];
 	
 	...
@@ -85,9 +85,9 @@ for(j = 0; j < num_pixels; j++)
 {
 	closest = find_closest_centroid(&pixels[j], centroides, k);
 	
-	aux_r[closest] += pixels[j].r;
-	aux_g[closest] += pixels[j].g;
-	aux_b[closest] += pixels[j].b;
+	aux_mean_r[closest] += pixels[j].r;
+	aux_mean_g[closest] += pixels[j].g;
+	aux_mean_b[closest] += pixels[j].b;
 	aux_nump[closest]++;
 }
 ```
@@ -117,9 +117,9 @@ for (j = 0; j < num_pixels; j++)
 #pragma omp parallel for reduction(+:aux_r, aux_g, aux_b, aux_nump)
 for(j = 0; j < num_pixels; j++) 
 {
-	aux_r[closest[j]] += pixels[j].r;
-	aux_g[closest[j]] += pixels[j].g;
-	aux_b[closest[j]] += pixels[j].b;
+	aux_mean_r[closest[j]] += pixels[j].r;
+	aux_mean_g[closest[j]] += pixels[j].g;
+	aux_mean_b[closest[j]] += pixels[j].b;
 	aux_nump[closest[j]]++;
 }
 ```
@@ -130,3 +130,49 @@ Amb aquests canvis conseguim el següent perfilat:
 
 Obtenint una millora respecte l'anterior millora d'un `5.29x`.
 
+A partir d'aquí podem fer millores lleus que no afectaran gaire en el pes del temps d'execució final. En aquest cas nosaltres hem decidit fer un altre loop fision en el for final de la mateixa funció (`kmeans`) per treure les divisions a un altre for i poder paral·lelitzar la resta de codi de manera correcta. Afegirem un `#pragma omp parallel for reduction(||:condition) schedule(dynamic)` al segon for resultant ja que, tot i que sigui lògic, hi ha un `reduction` amb la variable condition. Finalemnt, també en aquest for, tornarem a canviar els valors de l'estructura pels valors de les arrays locals que hem creat per poder paral·lelitzar correctament. Els canvis resultants són els següents:
+
+```c
+for(j = 0; j < k; j++) 
+{
+	aux_r[j] = centroides[j].r;
+	aux_g[j] = centroides[j].g;
+	aux_b[j] = centroides[j].b;
+}
+
+#pragma omp parallel for
+for(j = 0; j < k; j++)
+{
+	aux_mean_r[j] = aux_mean_r[j]/aux_nump[j];
+	aux_mean_g[j] = aux_mean_g[j]/aux_nump[j];
+	aux_mean_b[j] = aux_mean_b[j]/aux_nump[j];
+}
+
+// Update centroids & check stop condition
+condition = 0;
+#pragma omp parallel for reduction(||:condition)
+for(j = 0; j < k; j++) 
+{
+	if(aux_nump[j] == 0) 
+	{
+		continue;
+	}
+
+	changed = aux_mean_r[j] != aux_r[j] || aux_mean_g[j] != aux_g[j] || aux_mean_b[j] != aux_b[j];
+	condition = condition || changed;
+
+	centroides[j].media_r = aux_mean_r[j];
+	centroides[j].media_g = aux_mean_g[j];
+	centroides[j].media_b = aux_mean_b[j];
+	centroides[j].num_puntos = aux_nump[j];
+	centroides[j].r = centroides[j].media_r;
+	centroides[j].g = centroides[j].media_g;
+	centroides[j].b = centroides[j].media_b;
+}
+```
+
+Amb aquests canvis obtenim el següent perfilat:
+
+![perf stat per K=10 amb la tercera millora](/assets/plab_imgs/perf_stat_tercera_millora_k10.png)
+
+I com es pot observar obtenim una millora respecta la millar anterior de `1.0099x`, que tal i com hem comentat, és ínfima.
