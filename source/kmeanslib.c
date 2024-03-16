@@ -194,8 +194,9 @@ uint8_t find_closest_centroid(rgb* p, cluster* centroids, uint8_t num_clusters){
  * input @param: pixels 	--> pointer to array of rgb (pixels)
  */
 void kmeans(uint8_t k, cluster* centroides, uint32_t num_pixels, rgb* pixels){	
-	uint8_t condition, changed, closest;
-	uint32_t i, j, random_num, aux_r[k], aux_g[k], aux_b[k], aux_nump[k];
+	uint8_t condition, changed;
+	uint32_t i, j, random_num, aux_mean_r[k], aux_mean_g[k], aux_mean_b[k], aux_nump[k], aux_r[k], aux_g[k], aux_b[k];
+	uint8_t* closest = malloc(sizeof(uint8_t) * num_pixels);
 	
 	printf("STEP 1: K = %d\n", k);
 	k = MIN(k, num_pixels);
@@ -222,44 +223,60 @@ void kmeans(uint8_t k, cluster* centroides, uint32_t num_pixels, rgb* pixels){
 			centroides[j].media_g = 0;
 			centroides[j].media_b = 0;
 			centroides[j].num_puntos = 0;
-			aux_r[j] = 0;
-			aux_g[j] = 0;
-			aux_b[j] = 0;
+			aux_mean_r[j] = 0;
+			aux_mean_g[j] = 0;
+			aux_mean_b[j] = 0;
 			aux_nump[j] = 0;
 		}
-   
+
+		#pragma omp parallel for
+		for (j = 0; j < num_pixels; j++)
+		{
+			closest[j] = find_closest_centroid(&pixels[j], centroides, k);
+		}
+
 		// Find closest cluster for each pixel
-		#pragma omp parallel for reduction(+:aux_r, aux_g, aux_b, aux_nump)
+		#pragma omp parallel for reduction(+:aux_mean_r, aux_mean_g, aux_mean_b, aux_nump)
 		for(j = 0; j < num_pixels; j++) 
     	{
-			closest = find_closest_centroid(&pixels[j], centroides, k);
-			
-			aux_r[closest] += pixels[j].r;
-			aux_g[closest] += pixels[j].g;
-			aux_b[closest] += pixels[j].b;
-			aux_nump[closest]++;
+			aux_mean_r[closest[j]] += pixels[j].r;
+			aux_mean_g[closest[j]] += pixels[j].g;
+			aux_mean_b[closest[j]] += pixels[j].b;
+			aux_nump[closest[j]]++;
 		}
-		
+
+		for(j = 0; j < k; j++) 
+		{
+			aux_r[j] = centroides[j].r;
+			aux_g[j] = centroides[j].g;
+			aux_b[j] = centroides[j].b;
+		}
+
+		#pragma omp parallel for
+		for(j = 0; j < k; j++)
+		{
+			aux_mean_r[j] = aux_mean_r[j]/aux_nump[j];
+			aux_mean_g[j] = aux_mean_g[j]/aux_nump[j];
+			aux_mean_b[j] = aux_mean_b[j]/aux_nump[j];
+		}
 
 		// Update centroids & check stop condition
 		condition = 0;
+		#pragma omp parallel for reduction(||:condition)
 		for(j = 0; j < k; j++) 
 		{
-			centroides[j].media_r = aux_r[j];
-			centroides[j].media_g = aux_g[j];
-			centroides[j].media_b = aux_b[j];
-			centroides[j].num_puntos = aux_nump[j];
-			
-			if(centroides[j].num_puntos == 0) 
+			if(aux_nump[j] == 0) 
 			{
 				continue;
 			}
 
-			centroides[j].media_r = centroides[j].media_r/centroides[j].num_puntos;
-			centroides[j].media_g = centroides[j].media_g/centroides[j].num_puntos;
-			centroides[j].media_b = centroides[j].media_b/centroides[j].num_puntos;
-			changed = centroides[j].media_r != centroides[j].r || centroides[j].media_g != centroides[j].g || centroides[j].media_b != centroides[j].b;
+			changed = aux_mean_r[j] != aux_r[j] || aux_mean_g[j] != aux_g[j] || aux_mean_b[j] != aux_b[j];
 			condition = condition || changed;
+
+			centroides[j].media_r = aux_mean_r[j];
+			centroides[j].media_g = aux_mean_g[j];
+			centroides[j].media_b = aux_mean_b[j];
+			centroides[j].num_puntos = aux_nump[j];
 			centroides[j].r = centroides[j].media_r;
 			centroides[j].g = centroides[j].media_g;
 			centroides[j].b = centroides[j].media_b;
