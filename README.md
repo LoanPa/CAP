@@ -94,7 +94,7 @@ for(j = 0; j < num_pixels; j++)
 
 Amb aquest canvi hem aconseguit les següents mètriques:
 
-![perf stat per K=10 amb la primera millora](/assets/plab_imgs/perf_stat_millora1_k10.png)
+![perf stat per K=10 amb la primera millora](/assets/plab_imgs/perf_stat_millora1_k10.png.png)
 
 ---------------
 ### Optimització II
@@ -127,7 +127,7 @@ for(j = 0; j < num_pixels; j++)
 
 Amb aquests canvis conseguim el següent perfilat:
 
-![perf stat per K=10 amb la segona millora](/assets/plab_imgs/perf_stat_millora2_k10.png)
+![perf stat per K=10 amb la segona millora](/assets/plab_imgs/perf_stat_millora2_k10.png.png)
 
 Obtenint una millora respecte l'anterior millora d'un `5.29x`.
 
