@@ -177,7 +177,7 @@ for(j = 0; j < k; j++)
 
 Amb aquests canvis obtenim el següent perfilat:
 
-![perf stat per K=10 amb la tercera millora](/assets/plab_imgs/perf_stat_tercera_millora_k10.png)
+![perf stat per K=10 amb la tercera millora](/assets/plab_imgs/perf_stat_tercera_millora_k10.png.png)
 
 I com es pot observar obtenim una millora respecta la millora anterior de `1.0099x`, que tal i com hem comentat, és ínfima.
 
