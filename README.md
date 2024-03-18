@@ -170,7 +170,7 @@ for(j = 0; j < k; j++)
 	centroides[j].media_b = aux_mean_b[j];
 	centroides[j].num_puntos = aux_nump[j];
 	centroides[j].r = centroides[j].media_r;
-	centroides[j].g = centroides[j].media_g;
+	centroides[j].g = centroides[j].media_g;rior de 1.
 	centroides[j].b = centroides[j].media_b;
 }
 ```
@@ -180,3 +180,18 @@ Amb aquests canvis obtenim el següent perfilat:
 ![perf stat per K=10 amb la tercera millora](/assets/plab_imgs/perf_stat_tercera_millora_k10.png)
 
 I com es pot observar obtenim una millora respecta la millora anterior de `1.0099x`, que tal i com hem comentat, és ínfima.
+
+---------------
+## Execucions finals amb diferents K
+
+A continuació mostrarem en una taula les execucions amb el codi optimitzat per K més grans, de 10 fins a 30, augmentant de 2 en 2 per la imatge `imagen.bmp`:
+
+| K value | Time | -- | K value | Time |
+| ------- | ---- | ----- | ------- | ---- |
+| 10 | 2,115 | -- | 22 | 4,710 |
+| 12 | 2,285 | -- | 24 | 5,913 |
+| 14 | 4,325 | -- | 26 | 7,111 |
+| 16 | 4,119 | -- | 28 | 9,794 |
+| 18 | 4,725 | -- | 30 | 6,413 |
+| 20 | 6,420 | -- | -- | -- |
+
